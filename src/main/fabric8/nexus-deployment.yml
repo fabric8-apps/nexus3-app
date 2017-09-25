@@ -1,0 +1,52 @@
+---
+apiVersion: "extensions/v1beta1"
+kind: "Deployment"
+metadata:
+  annotations:
+    fabric8.io/iconUrl: "https://cdn.rawgit.com/fabric8io/fabric8-devops/master/nexus/src/main/fabric8/icon.png"
+  labels:
+    preview: "true"
+  name: "nexus3"
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+    recreateParams:
+      timeoutSeconds: 7200
+  template:
+    metadata:
+      labels:
+        fabric8.io/type: "preview"
+    spec:
+      containers:
+      - image: "test/nexus:dev3"
+        imagePullPolicy: "IfNotPresent"
+        lifecycle:
+          postStart:
+            exec:
+              command:
+              - "/opt/sonatype/nexus/postStart.sh"
+        readinessProbe:
+          httpGet:
+            path: "/"
+            port: 8081
+          initialDelaySeconds: 30
+          timeoutSeconds: 10
+        livenessProbe:
+          httpGet:
+            path: "/"
+            port: 8081
+          initialDelaySeconds: 1000
+          timeoutSeconds: 10
+        name: "nexus3"
+        ports:
+        - containerPort: 8081
+          name: "http"
+        volumeMounts:
+        - mountPath: "/nexus-data"
+          name: "nexus3-storage"
+          readOnly: false
+      volumes:
+      - name: "nexus3-storage"
+        persistentVolumeClaim:
+          claimName: nexus3-storage
